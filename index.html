@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>VR GameZone — канал о виртуальной реальности</title>
+    
+    <!-- Подключение шрифтов: Orbitron для заголовков, Montserrat для текста -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome для иконок соцсетей -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-deep: #0a0a0f;
+            --bg-card: rgba(15, 15, 30, 0.7);
+            --neon-purple: #c459ff;
+            --neon-cyan: #00f0ff;
+            --neon-pink: #ff3cac;
+            --text-light: #e0e0f0;
+            --text-muted: #a0a0c0;
+            --glass-border: rgba(196, 89, 255, 0.25);
+            --card-shadow: 0 0 25px rgba(196, 89, 255, 0.2);
+            --glow-text: 0 0 10px rgba(0, 240, 255, 0.7);
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--bg-deep);
+            color: var(--text-light);
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* ---- Анимированный VR-фон (canvas с частицами) ---- */
+        #vr-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        /* ---- Основная сетка сайта ---- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ---- Шапка с неоновой подсветкой ---- */
+        header {
+            padding: 20px 0;
+            backdrop-filter: blur(18px);
+            background: rgba(10, 10, 20, 0.75);
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .header-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 800;
+            font-size: 2.2rem;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 15px rgba(196, 89, 255, 0.6));
+            text-transform: uppercase;
+            transition: transform 0.3s ease;
+        }
+        .logo:hover {
+            transform: scale(1.03);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 600;
+            font-size: 0.9rem;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            text-decoration: none;
+            text-transform: uppercase;
+            position: relative;
+            padding: 6px 0;
+            transition: color 0.3s, text-shadow 0.3s;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0%;
+            height: 2px;
+            background: var(--neon-cyan);
+            box-shadow: 0 0 12px var(--neon-cyan);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: white;
+            text-shadow: var(--glow-text);
+        }
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        /* ---- Секция герой (главный экран) ---- */
+        .hero {
+            min-height: 85vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero-content h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 800;
+            font-size: clamp(2.8rem, 8vw, 5.2rem);
+            line-height: 1.2;
+            background: linear-gradient(to right, #fff, var(--neon-cyan), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            text-shadow: 0 0 25px rgba(196, 89, 255, 0.5);
+        }
+
+        .hero-content .subtitle {
+            font-size: 1.3rem;
+            font-weight: 300;
+            color: var(--text-muted);
+            max-width: 700px;
+            margin: 0 auto 35px;
+            backdrop-filter: blur(10px);
+            padding: 10px 25px;
+            border-radius: 40px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(196, 89, 255, 0.2);
+            display: inline-block;
+        }
+
+        .cta-button {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, var(--neon-purple), #7b2fff);
+            color: white;
+            border: none;
+            padding: 16px 42px;
+            border-radius: 50px;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 0 30px rgba(196, 89, 255, 0.7);
+            transition: all 0.4s ease;
+            text-decoration: none;
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-button:hover {
+            box-shadow: 0 0 45px rgba(0, 240, 255, 0.9);
+            transform: translateY(-3px);
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+        }
+
+        /* ---- Секция с видео (карточки) ---- */
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 70px 0 40px;
+            text-align: center;
+            color: white;
+            text-shadow: 0 0 15px var(--neon-purple);
+            position: relative;
+        }
+        .section-title span {
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 35px;
+            margin-bottom: 60px;
+        }
+
+        .video-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border-radius: 28px;
+            border: 1px solid var(--glass-border);
+            overflow: hidden;
+            transition: transform 0.35s ease, box-shadow 0.4s;
+            box-shadow: var(--card-shadow);
+        }
+
+        .video-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 25px 45px rgba(196, 89, 255, 0.5);
+            border-color: var(--neon-cyan);
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 */
+            background: #000;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .video-info {
+            padding: 20px 18px 25px;
+        }
+        .video-info h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            color: white;
+        }
+        .video-info p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* ---- Обо мне / фичи ---- */
+        .about-section {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 45px;
+            margin: 70px 0;
+            background: rgba(20, 20, 35, 0.5);
+            backdrop-filter: blur(18px);
+            border-radius: 35px;
+            padding: 45px 40px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .about-text {
+            flex: 1 1 400px;
+        }
+        .about-text h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+        .about-text p {
+            color: var(--text-muted);
+            margin-bottom: 18px;
+        }
+        .avatar-placeholder {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            color: white;
+            box-shadow: 0 0 35px var(--neon-purple);
+            margin: 0 auto;
+        }
+
+        /* ---- Соцсети и подписка ---- */
+        .social-grid {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 28px;
+            margin: 45px 0;
+        }
+        .social-icon {
+            font-size: 2.2rem;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.03);
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 25px;
+            border: 1px solid rgba(196, 89, 255, 0.25);
+            backdrop-filter: blur(10px);
+        }
+        .social-icon:hover {
+            color: white;
+            text-shadow: 0 0 20px var(--neon-cyan);
+            border-color: var(--neon-cyan);
+            transform: translateY(-6px);
+            box-shadow: 0 10px 25px rgba(0, 240, 255, 0.3);
+        }
+
+        /* ---- Подвал ---- */
+        footer {
+            text-align: center;
+            padding: 35px 0;
+            border-top: 1px solid rgba(196, 89, 255, 0.2);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+            margin-top: 30px;
+        }
+
+        @media (max-width: 680px) {
+            .header-inner {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .nav-links {
+                gap: 18px;
+            }
+            .about-section {
+                padding: 25px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Canvas для анимированного VR-фона (сетка + частицы) -->
+    <canvas id="vr-canvas"></canvas>
+
+    <header>
+        <div class="container header-inner">
+            <div class="logo">VR GAMEZONE</div>
+            <nav class="nav-links">
+                <a href="#home">Главная</a>
+                <a href="#videos">Видео</a>
+                <a href="#about">О канале</a>
+                <a href="#social">Соцсети</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Герой-секция -->
+        <section id="home" class="hero">
+            <div class="hero-content">
+                <h1>Погрузись в VR</h1>
+                <p class="subtitle">Обзоры, летсплеи и новости виртуальной реальности. Каждую неделю новый контент.</p>
+                <a href="https://www.youtube.com/@VRGameZone?sub_confirmation=1" target="_blank" class="cta-button">
+                    <i class="fab fa-youtube"></i> Подписаться
+                </a>
+            </div>
+        </section>
+
+        <!-- Секция последних видео -->
+        <section id="videos">
+              
+                
+                
+            </div>
+            <div style="text-align: center; margin-bottom: 50px;">
+                <a href="https://www.youtube.com/@VRGameZone" target="_blank" class="cta-button" style="font-size: 0.9rem; padding: 12px 32px;">
+                    Смотреть все видео <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </section>
+
+        <!-- Блок "О канале" -->
+        <section id="about" class="about-section">
+            <div style="text-align: center; flex: 0 0 auto;">
+                <div class="avatar-placeholder">
+                    <i class="fas fa-vr-cardboard"></i>
+                </div>
+            </div>
+            <div class="about-text">
+                <h2>Привет, я <span style="color: var(--neon-cyan);">VRzona</span></h2>
+                <p>Я живу в виртуальной реальности с 2026 года. На этом канале я прохожу игры.</p>
+                <p>Новые видео буду старатьсь выпускать каждый вторник и пятницу. Присоединяйся к сообществу игроков, которые уже живут в измерении VR!</p>
+                <!-- на будуещие <p><i class="fas fa-headset"></i> Сотрудничество: vr.gamezone@example.com</p>-->
+            </div>
+        </section>
+
+        <!-- Социальные сети -->
+        <section id="social">
+            <h2 class="section-title"><span>Я в соцсетях</span></h2>
+            <div class="social-grid">
+                <a href="https://www.youtube.com/@VRZone3" target="_blank" class="social-icon" aria-label="YouTube">
+                    <i class="fab fa-youtube"></i>
+                </a>
+                 <a href="https://www.youtube.com/@Чёрныйфон-ъ9х" target="_blank" class="social-icon" aria-label="YouTube 2">
+                    <i class="fab fa-youtube"></i>
+                </a>
+                <a href="https://t.me/blekfonoficial" target="_blank" class="social-icon" aria-label="Telegram">
+                    <i class="fab fa-telegram-plane"></i>
+                </a>
+                <a href="https://discord.gg/vrzone" target="_blank" class="social-icon" aria-label="Discord">
+                    <i class="fab fa-discord"></i>
+                </a>
+                <a href="https://twitch.tv/vrgamezone" target="_blank" class="social-icon" aria-label="Twitch">
+                    <i class="fab fa-twitch"></i>
+                </a>
+                <a href="https://vk.com/vrgamezone" target="_blank" class="social-icon" aria-label="VK">
+                    <i class="fab fa-vk"></i>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <!-- Скрипт для анимации canvas (VR-сетка и парящие частицы) -->
+    <script>
+        (function() {
+            const canvas = document.getElementById('vr-canvas');
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            let particles = [];
+
+            // Настройки сетки и частиц
+            const gridSpacing = 55;
+            const particleCount = 70;
+
+            function resize() {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+                initParticles();
+            }
+
+            // Частицы
+            function initParticles() {
+                particles = [];
+                for (let i = 0; i < particleCount; i++) {
+                    particles.push({
+                        x: Math.random() * width,
+                        y: Math.random() * height,
+                        radius: Math.random() * 2.2 + 0.8,
+                        speedX: (Math.random() - 0.5) * 0.5,
+                        speedY: (Math.random() - 0.5) * 0.5,
+                        color: Math.random() > 0.5 ? '196, 89, 255' : '0, 240, 255' // фиолетовый или циан
+                    });
+                }
+            }
+
+            // Отрисовка VR-сетки и частиц
+            function draw() {
+                ctx.clearRect(0, 0, width, height);
+                
+                // Рисуем линии сетки (эффект голографической сетки)
+                ctx.strokeStyle = 'rgba(196, 89, 255, 0.12)';
+                ctx.lineWidth = 0.7;
+                
+                // Горизонтальные линии
+                for (let y = gridSpacing; y < height; y += gridSpacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(width, y);
+                    ctx.stroke();
+                }
+                
+                // Вертикальные линии
+                for (let x = gridSpacing; x < width; x += gridSpacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, height);
+                    ctx.stroke();
+                }
+
+                // Рисуем частицы
+                particles.forEach(p => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${p.color}, 0.8)`;
+                    ctx.fill();
+                    // Свечение
+                    ctx.shadowColor = `rgba(${p.color}, 0.9)`;
+                    ctx.shadowBlur = 9;
+                    ctx.fill();
+                    ctx.shadowBlur = 0; // сброс тени
+                });
+
+                // Движение частиц
+                particles.forEach(p => {
+                    p.x += p.speedX;
+                    p.y += p.speedY;
+                    
+                    // Зацикливание по краям
+                    if (p.x < 0) p.x = width;
+                    if (p.x > width) p.x = 0;
+                    if (p.y < 0) p.y = height;
+                    if (p.y > height) p.y = 0;
+                });
+
+                requestAnimationFrame(draw);
+            }
+
+            window.addEventListener('resize', resize);
+            resize();
+            draw();
+        })();
+    </script>
+</body>
+</html>
